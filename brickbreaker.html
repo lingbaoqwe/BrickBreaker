@@ -1,0 +1,65 @@
+<html>
+  <head>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      canvas {
+        background: #aaa;
+        display: block;
+        margin: 0 auto;
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="myCanvas" width="1200" height="600"></canvas>
+    <script>
+var canvas=document.getElementById("myCanvas");
+var context=canvas.getContext("2d");
+
+      var ballx=canvas.width/2;
+      var bally=canvas.height/2;
+      //possible augment
+      var ballxDelta=3;
+      var ballyDelta=3;
+      var radius=20;
+
+      function drawBall(){
+        context.beginPath();
+      context.arc(ballx,bally,radius,0,2*Math.PI);
+      context.strokeStyle="purple";
+      context.stroke();
+      context.fillStyle="yellow";
+      context.fill();
+      }
+
+      function collision(){
+        if(ballx+radius>1200||ballx-radius<0){
+          ballxDelta*=-1;
+          if(ballxDelta<0){ //change fill color
+            context.fillStyle="white";
+          }
+          else{ //change stroke color
+            context.strokeStyle="pink";
+          }
+        }
+        if(bally+radius>600||bally-radius<0){
+          ballyDelta*=-1;
+        }
+      }
+
+      function gameLoop()
+      {
+        context.clearRect(0,0,1200,600);
+        drawBall();
+        collision();
+        ballx+=ballxDelta;
+        bally+=ballyDelta;
+      }
+
+      setInterval(gameLoop,10);
+    </script>
+  </body>
+</html>
