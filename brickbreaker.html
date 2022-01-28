@@ -16,50 +16,187 @@
   <body>
     <canvas id="myCanvas" width="1200" height="600"></canvas>
     <script>
-var canvas=document.getElementById("myCanvas");
-var context=canvas.getContext("2d");
+      var canvas = document.getElementById("myCanvas");
+      var context = canvas.getContext("2d");
+      document.addEventListener("keydown", keyDownHandler, false); //key handle
+      document.addEventListener("keyup", keyUpHandler, false);
 
-      var ballx=canvas.width/2;
-      var bally=canvas.height/2;
+      var ballx = canvas.width / 2;
+      var bally = canvas.height / 2;
       //possible augment
-      var ballxDelta=3;
-      var ballyDelta=3;
-      var radius=20;
+      var ballxDelta = 3;
+      var ballyDelta = 3;
+      var radius = 20;
+      var paddleX = 600;
+      var paddleY = 580;
+      var paddleWidth = 100;
+      var paddleHeight = 10;
+      var leftPressed = false;
+      var rightPressed = false;
+      var paddleSpeed = 5;
+      var bricks = [];
+      var rowCount = 5;
+      var columnCount = 22;
+      var score=0;
+      var gameover=false;
 
-      function drawBall(){
-        context.beginPath();
-      context.arc(ballx,bally,radius,0,2*Math.PI);
-      context.strokeStyle="purple";
-      context.stroke();
-      context.fillStyle="yellow";
-      context.fill();
+      function brick(x1, y1, c1) {
+        //c=color,hit=brick has been hit;
+        this.x = x1;
+        this.y = y1;
+        this.w = 50; //w=width,h=height
+        this.h = 20;
+        this.c = c1;
+        this.hit = false;
+      }
+      for (var ro = 0; ro < rowCount; ro++) {
+        //ro=row,col=column;
+        bricks[ro] = [];
+        for (var col = 0; col < columnCount; col++) {
+          var startX = 50 + col * 50;
+          var startY = 50 + ro * 20;
+          var red = Math.floor(Math.random() * 256); //round the numbers
+          var green = Math.floor(Math.random() * 256);
+          var blue = Math.floor(Math.random() * 256);
+          var color = "rgb(" + red + "," + green + "," + blue + ")";
+          bricks[ro][col] = new brick(startX, startY, color);
+        }
       }
 
-      function collision(){
-        if(ballx+radius>1200||ballx-radius<0){
-          ballxDelta*=-1;
-          if(ballxDelta<0){ //change fill color
-            context.fillStyle="white";
-          }
-          else{ //change stroke color
-            context.strokeStyle="pink";
-          }
-        }
-        if(bally+radius>600||bally-radius<0){
-          ballyDelta*=-1;
-        }
-      }
-
-      function gameLoop()
+      function drawScore()
       {
-        context.clearRect(0,0,1200,600);
-        drawBall();
-        collision();
-        ballx+=ballxDelta;
-        bally+=ballyDelta;
+        context.font="24px Ariel";
+        context.fillStyle="pink";
+        context.fillText("Score: "+score,1050,35);
       }
 
-      setInterval(gameLoop,10);
+      function drawbricks() {
+        for (var ro = 0;ro < rowCount;ro++)//ro=row,col=column
+         {
+          for (var col = 0; col < columnCount; col++) {
+            if (!bricks[ro][col].hit) {
+              //if not hit
+              context.beginPath();
+              context.rect(
+                bricks[ro][col].x,
+                bricks[ro][col].y,
+                bricks[ro][col].w,
+                bricks[ro][col].h
+              );
+              context.fillStyle = bricks[ro][col].c;
+              context.fill();
+              context.stroke();
+              context.closePath();
+
+              if (
+                ballx + 10 > bricks[ro][col].x &&
+                ballx - 10 < bricks[ro][col].x + bricks[ro][col].w &&
+                bally + 10 > bricks[ro][col].y &&
+                bally - 10 < bricks[ro][col].y + bricks[ro][col].h
+              )
+              {
+                bricks[ro][col].hit = true;
+                ballyDelta*=-1;//if brick hit then ball bounce
+                score++;
+                
+              }
+            }
+          }
+        }
+      }
+
+      //37=left,39=right
+      function keyDownHandler(keyEvent) {
+        if (keyEvent.keyCode == 37) {
+          leftPressed = true;
+          //console.log("left");
+        } else if (keyEvent.keyCode == 39) {
+          rightPressed = true;
+          //console.log("right");
+        }
+      }
+      function keyUpHandler(keyEvent) {
+        if (keyEvent.keyCode == 37) {
+          leftPressed = false;
+        } else if (keyEvent.keyCode == 39) {
+          rightPressed = false;
+        }
+      }
+      function movement() {
+        if (leftPressed && paddleX - paddleSpeed >= 0) {
+          paddleX -= paddleSpeed;
+        }
+        //paddleX is at left side of rectangle, right side check needs paddlex+paddleWidth to work
+        else if (rightPressed && paddleX + paddleWidth + paddleSpeed <= 1200) {
+          paddleX += paddleSpeed;
+        }
+      }
+
+      function drawPaddle() {
+        context.fillStyle = "blue";
+        context.fillRect(paddleX, paddleY, paddleWidth, paddleHeight);
+      }
+
+      function drawBall() {
+        context.beginPath();
+        context.arc(ballx, bally, radius, 0, 2 * Math.PI);
+        context.strokeStyle = "purple";
+        context.stroke();
+        context.fillStyle = "yellow";
+        context.fill();
+      }
+
+      function collision() {
+        if (ballx + radius > 1200 || ballx - radius < 0) {
+          ballxDelta *= -1;
+          if (ballxDelta < 0) {
+            //change fill color
+            context.fillStyle = "white";
+          } else {
+            //change stroke color
+            context.strokeStyle = "pink";
+          }
+        }
+        //bally- radius so outer circle touch the upper limit
+        if (bally + radius > 600 || bally - radius < 0) {
+          ballyDelta *= -1;
+          if(bally + radius > 600){//ball touch bottom
+            gameover=true;
+          }
+        }
+        //shaky, if ball touch edge of paddle bricks
+        if (
+          ballx > paddleX &&
+          ballx < paddleX + paddleWidth &&
+          bally + radius > paddleY
+        ) {
+          ballyDelta *= -1;
+        }
+      }
+
+      function gameLoop() {
+        context.clearRect(0, 0, 1200, 600);
+        if(!gameover)
+        {
+          drawBall();
+          collision();
+          drawPaddle();
+          movement();
+          drawbricks();
+          drawScore();
+          ballx += ballxDelta;
+          bally += ballyDelta;
+        }
+        else
+        {
+          context.font="100px Ariel";
+          context.fillStyle="pink";
+          //context.fillText("game is over",100,300);
+          context.fillText("score: "+score,100,400);
+        }
+      }
+
+      setInterval(gameLoop, 10);
     </script>
   </body>
 </html>
